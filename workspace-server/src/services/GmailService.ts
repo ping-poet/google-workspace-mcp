@@ -81,7 +81,12 @@ export class GmailService {
   private async getGmailClient(): Promise<gmail_v1.Gmail> {
     const auth = await this.authManager.getAuthenticatedClient();
     const options = { ...gaxiosOptions, auth };
-    return google.gmail({ version: 'v1', ...options });
+    const rootUrl = process.env.WORKSPACE_GMAIL_API_URL;
+    return google.gmail({
+      version: 'v1',
+      ...options,
+      ...(rootUrl ? { rootUrl } : {}),
+    });
   }
 
   /**
