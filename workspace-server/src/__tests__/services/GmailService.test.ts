@@ -102,6 +102,53 @@ describe('GmailService', () => {
     jest.restoreAllMocks();
   });
 
+  describe('client root URL', () => {
+    const original = process.env.WORKSPACE_GMAIL_API_URL;
+
+    beforeEach(() => {
+      mockGmailAPI.users.messages.list.mockResolvedValue({ data: {} });
+    });
+
+    afterEach(() => {
+      if (original === undefined) {
+        delete process.env.WORKSPACE_GMAIL_API_URL;
+      } else {
+        process.env.WORKSPACE_GMAIL_API_URL = original;
+      }
+    });
+
+    it('passes WORKSPACE_GMAIL_API_URL as rootUrl', async () => {
+      process.env.WORKSPACE_GMAIL_API_URL = 'http://gmail:9001/';
+
+      await gmailService.search({ query: 'in:inbox' });
+
+      expect(google.gmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          version: 'v1',
+          rootUrl: 'http://gmail:9001/',
+        }),
+      );
+    });
+
+    it('sets no rootUrl when the variable is unset', async () => {
+      delete process.env.WORKSPACE_GMAIL_API_URL;
+
+      await gmailService.search({ query: 'in:inbox' });
+
+      const options = (google.gmail as jest.Mock).mock.calls[0][0] as object;
+      expect(options).not.toHaveProperty('rootUrl');
+    });
+
+    it('sets no rootUrl when the variable is empty', async () => {
+      process.env.WORKSPACE_GMAIL_API_URL = '';
+
+      await gmailService.search({ query: 'in:inbox' });
+
+      const options = (google.gmail as jest.Mock).mock.calls[0][0] as object;
+      expect(options).not.toHaveProperty('rootUrl');
+    });
+  });
+
   describe('search', () => {
     it('should search for emails with query', async () => {
       const mockMessages = [
